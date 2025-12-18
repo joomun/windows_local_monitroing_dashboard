@@ -1,2 +1,3 @@
 # Ignore dashboard.html
 dashboard.html
+*.jsonl
