@@ -119,6 +119,17 @@ body:has(.fullscreen){overflow:hidden;}
 .fullscreen .canvasWrap{height:calc(100vh - 200px);}
 .close-full{position:absolute;top:14px;right:14px;background:var(--kill);color:#fff;border:none;padding:6px 10px;font-size:12px;border-radius:6px;}
 
+/* loading overlay for fullscreen zoom */
+.loading-overlay{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.65);backdrop-filter:blur(4px);border-radius:8px;pointer-events:none;
+}
+[data-theme="dark"] .loading-overlay{ background: rgba(10,10,12,0.6); color:var(--text); }
+.loading-overlay .spinner{
+  width:36px;height:36px;border-radius:50%;border:4px solid rgba(0,0,0,0.08);border-top-color:var(--accent);animation:spin .9s linear infinite;margin-bottom:8px;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
 /*  TOOLTIP  */
 .tooltip{position:absolute;background:rgba(0,0,0,.85);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;pointer-events:none;z-index:1000;transform:translate(-50%,-100%);margin-top:-8px;white-space:nowrap;}
 
@@ -245,12 +256,42 @@ if (themeToggle) {
 /* ----------  FULL-SCREEN GRAPH  ---------- */
 function openFullScreen(cardId){
   const card = document.getElementById(cardId);
+  if(!card) return;
+  // show fullscreen class
   card.classList.add('fullscreen');
-  const closeBtn = document.createElement('button');
-  closeBtn.textContent='X'; closeBtn.className='close-full';
-  closeBtn.onclick=()=>{ card.classList.remove('fullscreen'); closeBtn.remove(); };
-  card.appendChild(closeBtn);
-  window.dispatchEvent(new Event('resize')); // force canvas redraw
+
+  // add close button if not present
+  if(!card.querySelector('.close-full')){
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent='X'; closeBtn.className='close-full';
+    closeBtn.onclick=()=>{ card.classList.remove('fullscreen'); closeBtn.remove(); };
+    card.appendChild(closeBtn);
+  }
+
+  // ensure loading overlay exists and show it
+  let overlay = card.querySelector('.loading-overlay');
+  if(!overlay){
+    overlay = document.createElement('div');
+    overlay.className = 'loading-overlay';
+    overlay.innerHTML = '<div class="spinner"></div><div class="small">Loading...</div>';
+    // put overlay inside the canvasWrap so it covers the graph area
+    const wrap = card.querySelector('.canvasWrap') || card;
+    wrap.style.position = 'relative';
+    wrap.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  overlay.style.pointerEvents = 'none';
+
+  // allow layout to stabilize, then redraw charts and hide overlay
+  // small delay helps when zoom / CSS transitions occur
+  requestAnimationFrame(()=> {
+    // extra micro-delay to ensure browser has applied the fullscreen layout
+    setTimeout(()=>{
+      // redraw only charts to be quick
+      try { renderAll(); } catch(e){ /* fallback */ fetchLines(); }
+      overlay.style.display = 'none';
+    }, 180);
+  });
 }
 
 /* ----------  FILTER LOGIC  ---------- */
