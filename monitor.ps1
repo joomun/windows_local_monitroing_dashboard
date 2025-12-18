@@ -5,7 +5,9 @@
 $DataFile = Join-Path $PSScriptRoot 'monitor_data.jsonl'
 $HtmlFile = Join-Path $PSScriptRoot 'dashboard.html'
 $Interval = 2            # seconds between samples
-$Keep     = 300          # keep last N samples
+$RetentionDays = 7       # retention window in days (1 week)
+# compute number of samples to keep (rounded up)
+$Keep = [int]([math]::Ceiling(($RetentionDays * 24 * 3600) / $Interval))
 
 if (-not (Test-Path $DataFile)) { New-Item -Path $DataFile -ItemType File | Out-Null }
 
@@ -109,13 +111,16 @@ input[type="datetime-local"]{width:100%;max-width:200px;}
 .card:hover .resize{opacity:.5}
 
 /*  CHART  */
-.canvasWrap{width:100%;height:220px;background:linear-gradient(180deg,var(--card),var(--bg));border-radius:10px;padding:10px;box-sizing:border-box;cursor:zoom-in;}
+.canvasWrap{width:100%;height:220px;background:linear-gradient(180deg,var(--card),var(--bg));border-radius:10px;padding:10px;box-sizing:border-box;cursor:zoom-in;position:relative;}
 canvas{width:100%;height:100%;}
 /* fullscreen mode */
 body:has(.fullscreen){overflow:hidden;}
 .fullscreen{position:fixed;inset:24px;z-index:999;resize:none;}
 .fullscreen .canvasWrap{height:calc(100vh - 200px);}
 .close-full{position:absolute;top:14px;right:14px;background:var(--kill);color:#fff;border:none;padding:6px 10px;font-size:12px;border-radius:6px;}
+
+/*  TOOLTIP  */
+.tooltip{position:absolute;background:rgba(0,0,0,.85);color:#fff;padding:6px 10px;border-radius:6px;font-size:12px;pointer-events:none;z-index:1000;transform:translate(-50%,-100%);margin-top:-8px;white-space:nowrap;}
 
 /*  KILL CARD  */
 .kill-row{display:flex;align-items:center;gap:12px;margin-top:10px;}
@@ -129,7 +134,7 @@ footer{margin-top:24px;text-align:right;color:var(--muted);font-size:12px;}
 .theme-switch{position:relative;display:inline-block;width:56px;height:28px;vertical-align:middle}
 .theme-switch input{opacity:0;width:0;height:0;margin:0}
 .theme-switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#d6d8dd;border-radius:28px;transition:background .18s}
-.theme-switch .slider:before{position:absolute;content:"";height:22px;width:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .18s;box-shadow:0 2px 6px rgba(0,0,0,0.12)}
+.theme-switch .slider:before{position:absolute;content:"";height:22px;width:22px;left=3px;top=3px;background:#fff;border-radius:50%;transition:transform .18s;box-shadow:0 2px 6px rgba(0,0,0,0.12)}
 .theme-switch input:checked + .slider{background:var(--accent)}
 .theme-switch input:checked + .slider:before{transform:translateX(28px)}
 </style>
@@ -227,7 +232,6 @@ const themeToggle = document.getElementById('themeToggle');
 function applyTheme(){
   const m = localStorage.theme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   document.documentElement.setAttribute('data-theme', m);
-  // keep checkbox in sync (checked => dark)
   if (themeToggle) themeToggle.checked = (m === 'dark');
 }
 applyTheme();
@@ -348,6 +352,7 @@ function renderChart(canvasId, data, metric, label, color){
   ctx.clearRect(0,0,w,h);
 
   const vals = data.map(l=>parseLine(l)).filter(d=>d&& d[metric]!=null).map(d=>Number(d[metric]));
+  const times = data.map(l=>parseLine(l)).filter(d=>d&& d[metric]!=null).map(d=>d.Time);
   if(!vals.length){ ctx.fillStyle = '#999'; ctx.font = `${12*dpr}px sans-serif`; ctx.fillText('No data',10*dpr,20*dpr); return;}
 
   const min = Math.min(...vals), max = Math.max(...vals);
@@ -389,7 +394,38 @@ function renderChart(canvasId, data, metric, label, color){
   ctx.fillStyle = '#555';
   ctx.font = `${12*dpr}px sans-serif`;
   ctx.fillText(`${label}  (min:${round(min)}  max:${round(max)})`, pad, 14*dpr);
+
+  // store data for hover
+  canvas.chartData = {vals, times, min, max, pad, plotW, plotH, label, color};
 }
+
+/* ----------  HOVER TOOLTIP  ---------- */
+let tip = null;
+function createTip(){
+  if(tip) return;
+  tip = document.createElement('div'); tip.className='tooltip'; document.body.appendChild(tip);
+}
+function removeTip(){ if(tip) { tip.remove(); tip=null; } }
+
+document.querySelectorAll('canvas').forEach(canvas=>{
+  createTip();
+  canvas.addEventListener('mousemove', e=>{
+    if(!canvas.chartData) return;
+    const {vals, times, min, max, pad, plotW, plotH, label, color} = canvas.chartData;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width/rect.width);
+    const idx = Math.round((x - pad) / plotW * (vals.length-1));
+    if(idx<0||idx>=vals.length) { removeTip(); return; }
+    const v = vals[idx]; const t = times[idx];
+    if(t==null||v==null) { removeTip(); return; }
+    tip.textContent = `${t}   ${label}: ${round(v)}`;
+    tip.style.left = e.clientX + 'px';
+    tip.style.top  = e.clientY + 'px';
+    tip.style.transform = 'translate(-50%,-100%)';
+    tip.style.marginTop = '-8px';
+  });
+  canvas.addEventListener('mouseleave', ()=> removeTip());
+});
 
 /* ----------  UTILS  ---------- */
 function round(v){ return Math.round(v*100)/100; }
