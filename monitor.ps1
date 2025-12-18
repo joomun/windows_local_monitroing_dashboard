@@ -55,7 +55,6 @@ while ($true) {
     $updated      = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
 
     # single-quoted here-string → JS ${…} left untouched by PowerShell
-    # ---------  NEW DASHBOARD TEMPLATE  ---------
     $html = @'
 <!doctype html>
 <html>
@@ -66,63 +65,73 @@ while ($true) {
 <style>
 /*  CSS VARIABLES  */
 :root{
-  --bg:#f6f8fa; --card:#fff; --text:#111; --muted:#6b7280; --accent:#0a84ff;
+  --bg:#f6f8fa; --card:#ffffff; --text:#111317; --muted:#6b7280; --accent:#0a84ff;
   --cpu:#ff6b6b; --ram:#6bc1ff; --disk:#8ce99a; --net:#ffd43b; --kill:#ff4d4d;
-  --shadow:0 6px 18px rgba(15,23,42,.08);
-  --radius:10px; --font:"Segoe UI",Roboto,Arial,sans-serif;
-  --resize-h:10px; --resize-w:10px;
+  --shadow:0 8px 24px rgba(15,23,42,.08); --radius:14px; --font:"Segoe UI",Roboto,Arial,sans-serif;
+  --resize-h:12px; --resize-w:12px;
+  --transition:.25s ease;
 }
 /*  DARK THEME  */
 @media (prefers-color-scheme:dark){
   :root{ --bg:#0d1117; --card:#161b22; --text:#e6edf3; --muted:#8b949e; }
 }
 [data-theme="dark"]{ --bg:#0d1117; --card:#161b22; --text:#e6edf3; --muted:#8b949e; }
-[data-theme="light"]{ --bg:#f6f8fa; --card:#fff; --text:#111; --muted:#6b7280; }
+[data-theme="light"]{ --bg:#f6f8fa; --card:#fff; --text:#111317; --muted:#6b7280; }
 
 /*  GLOBAL  */
 *{box-sizing:border-box;font-family:var(--font);}
-body{background:var(--bg);color:var(--text);margin:0;padding:18px;}
-.container{max-width:1400px;margin:0 auto;}
-button,input,select{background:var(--card);color:var(--text);border:1px solid var(--muted);border-radius:6px;padding:6px 10px;font-size:13px;}
-button{cursor:pointer}button:hover{border-color:var(--accent);}
-input[type="datetime-local"]{width:100%;max-width:180px;}
+body{background:var(--bg);color:var(--text);margin:0;padding:24px;font-size:14px;line-height:1.45;}
+button,input,select{background:var(--card);color:var(--text);border:1px solid var(--muted);border-radius:8px;padding:8px 12px;font-size:13px;transition:var(--transition);}
+button{cursor:pointer}button:hover{border-color:var(--accent);transform:translateY(-1px);}
+input[type="datetime-local"]{width:100%;max-width:200px;}
 
 /*  HEADER  */
-.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
-.title{display:flex;align-items:center;gap:12px;}
-h1{font-size:22px;margin:0}
-.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-
-/*  CARDS  */
-.card{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:var(--shadow);position:relative;overflow:hidden;resize:block;}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px;}
-.card h3{margin:0 0 8px;font-size:17px;font-weight:600;}
-.resize{position:absolute;bottom:0;right:0;width:var(--resize-w);height:var(--resize-h);cursor:nw-resize;background:linear-gradient(135deg,transparent 40%,var(--muted) 100%);opacity:.25;transition:opacity .2s}
-.card:hover .resize{opacity:.6}
-
-/*  CHART WRAPPER  */
-.canvasWrap{width:100%;height:200px;background:linear-gradient(180deg,var(--card),var(--bg));border-radius:6px;padding:8px;box-sizing:border-box;}
-canvas{width:100%;height:100%;}
-
-/*  TABLES  */
-.tableWrap{max-height:320px;overflow:auto;border:1px solid var(--muted);border-radius:6px;padding:6px;}
-table{width:100%;border-collapse:collapse;font-size:13px;}
-th,td{padding:6px;border-bottom:1px solid var(--muted);text-align:center;}
-th{position:sticky;top:0;background:var(--bg);}
+.header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:12px;}
+.logo{width:36px;height:36px;background:var(--accent);border-radius:50%;display:grid;place-content:center;color:#fff;font-weight:700;font-size:18px;}
+.brand h1{font-size:24px;margin:0;font-weight:600;}
+.live-clock{font-size:13px;color:var(--muted);}
+.controls{display:flex;align-items:center;gap:10px;}
+#themeToggle{width:36px;height:36px;border-radius:50%;padding:0;font-size:18px;background:var(--card);border:1px solid var(--muted);}
 
 /*  FILTER BAR  */
-.filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.filter-bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:20px;}
 .filter-bar label{font-size:13px;color:var(--muted);}
 .quick-btns{display:flex;gap:6px;}
-.quick-btns button{font-size:12px;padding:4px 8px;}
+.quick-btns button{font-size:12px;padding:6px 10px;}
+
+/*  CARDS  */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px;}
+.card{background:var(--card);padding:18px;border-radius:var(--radius);box-shadow:var(--shadow);position:relative;overflow:hidden;resize:block;transition:var(--transition);}
+.card:hover{box-shadow:0 12px 32px rgba(15,23,42,.1);}
+.card h3{margin:0 0 12px;font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.resize{position:absolute;bottom:0;right:0;width:var(--resize-w);height:var(--resize-h);cursor:nw-resize;background:linear-gradient(135deg,transparent 40%,var(--muted) 100%);opacity:.2;transition:opacity .2s}
+.card:hover .resize{opacity:.5}
+
+/*  CHART  */
+.canvasWrap{width:100%;height:220px;background:linear-gradient(180deg,var(--card),var(--bg));border-radius:10px;padding:10px;box-sizing:border-box;cursor:zoom-in;}
+canvas{width:100%;height:100%;}
+/* fullscreen mode */
+body:has(.fullscreen){overflow:hidden;}
+.fullscreen{position:fixed;inset:24px;z-index:999;resize:none;}
+.fullscreen .canvasWrap{height:calc(100vh - 200px);}
+.close-full{position:absolute;top:14px;right:14px;background:var(--kill);color:#fff;border:none;padding:6px 10px;font-size:12px;border-radius:6px;}
 
 /*  KILL CARD  */
-.kill-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.kill-row{display:flex;align-items:center;gap:12px;margin-top:10px;}
 .kill-row button{background:var(--kill);color:#fff;border:none;}
 .kill-row button:hover{background:#ff1a1a;}
 
 /*  FOOTER  */
-footer{margin-top:14px;text-align:right;color:var(--muted);font-size:12px;}
+footer{margin-top:24px;text-align:right;color:var(--muted);font-size:12px;}
+
+/*  THEME SWITCH  */
+.theme-switch{position:relative;display:inline-block;width:56px;height:28px;vertical-align:middle}
+.theme-switch input{opacity:0;width:0;height:0;margin:0}
+.theme-switch .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#d6d8dd;border-radius:28px;transition:background .18s}
+.theme-switch .slider:before{position:absolute;content:"";height:22px;width:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .18s;box-shadow:0 2px 6px rgba(0,0,0,0.12)}
+.theme-switch input:checked + .slider{background:var(--accent)}
+.theme-switch input:checked + .slider:before{transform:translateX(28px)}
 </style>
 </head>
 <body>
@@ -130,12 +139,17 @@ footer{margin-top:14px;text-align:right;color:var(--muted);font-size:12px;}
 
   <!--  HEADER  -->
   <div class="header">
-    <div class="title">
+    <div class="brand">
+      <div class="logo">PC</div>
       <h1>Local PC Monitor</h1>
-      <div class="small" id="updated">Updated: {{UPDATED}}</div>
     </div>
+    <div class="live-clock" id="updated">Updated: {{UPDATED}}</div>
     <div class="controls">
-      <button id="themeToggle">🌗</button>
+      <label class="theme-switch" aria-hidden="true">
+        <input type="checkbox" id="themeToggle" aria-label="Toggle theme">
+        <span class="slider"></span>
+      </label>
+      <span class="small" style="margin-left:8px">Theme</span>
       <label class="small"><input id="autoRefresh" type="checkbox" checked> Auto</label>
       <button id="refresh" class="btn">Refresh</button>
       <div id="status" class="status"></div>
@@ -158,27 +172,27 @@ footer{margin-top:14px;text-align:right;color:var(--muted);font-size:12px;}
   <!--  CARDS  -->
   <div class="grid">
     <div class="card" id="cpuCard">
-      <h3>CPU %</h3>
-      <div class="canvasWrap"><canvas id="cpuCanvas"></canvas></div>
+      <h3><span class="dot" style="background:var(--cpu)"></span>CPU %</h3>
+      <div class="canvasWrap" ondblclick="openFullScreen('cpuCard')"><canvas id="cpuCanvas"></canvas></div>
       <div class="resize"></div>
     </div>
     <div class="card" id="ramCard">
-      <h3>Memory %</h3>
-      <div class="canvasWrap"><canvas id="ramCanvas"></canvas></div>
+      <h3><span class="dot" style="background:var(--ram)"></span>Memory %</h3>
+      <div class="canvasWrap" ondblclick="openFullScreen('ramCard')"><canvas id="ramCanvas"></canvas></div>
       <div class="resize"></div>
     </div>
     <div class="card" id="diskCard">
-      <h3>Disk free %</h3>
-      <div class="canvasWrap"><canvas id="diskCanvas"></canvas></div>
+      <h3><span class="dot" style="background:var(--disk)"></span>Disk free %</h3>
+      <div class="canvasWrap" ondblclick="openFullScreen('diskCard')"><canvas id="diskCanvas"></canvas></div>
       <div class="resize"></div>
     </div>
     <div class="card" id="netCard">
-      <h3>Network bytes</h3>
-      <div class="canvasWrap"><canvas id="netCanvas"></canvas></div>
+      <h3><span class="dot" style="background:var(--net)"></span>Network bytes</h3>
+      <div class="canvasWrap" ondblclick="openFullScreen('netCard')"><canvas id="netCanvas"></canvas></div>
       <div class="resize"></div>
     </div>
 
-    <!--  NEW: KILL CARD  -->
+    <!--  KILL CARD  -->
     <div class="card" id="killCard">
       <h3>Monitor process</h3>
       <div class="kill-row">
@@ -190,7 +204,7 @@ footer{margin-top:14px;text-align:right;color:var(--muted);font-size:12px;}
   </div>
 
   <!--  RAW FILE INFO  -->
-  <div class="card" style="margin-top:14px">
+  <div class="card" style="margin-top:18px">
     <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted)">
       <span>Raw file: <code>{{DATAFILE}}</code></span>
       <span>Showing <span id="sampleCount">0</span> samples</span>
@@ -209,17 +223,31 @@ let refreshInterval = 4000;
 let autoRefresh = true;
 
 /* ----------  THEME  ---------- */
-const themeBtn = document.getElementById('themeToggle');
+const themeToggle = document.getElementById('themeToggle');
 function applyTheme(){
   const m = localStorage.theme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  document.documentElement.setAttribute('data-theme',m);
+  document.documentElement.setAttribute('data-theme', m);
+  // keep checkbox in sync (checked => dark)
+  if (themeToggle) themeToggle.checked = (m === 'dark');
 }
 applyTheme();
-themeBtn.onclick = () => {
-  const flip = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  localStorage.theme = flip;
-  applyTheme();
-};
+if (themeToggle) {
+  themeToggle.onchange = (e) => {
+    localStorage.theme = e.target.checked ? 'dark' : 'light';
+    applyTheme();
+  };
+}
+
+/* ----------  FULL-SCREEN GRAPH  ---------- */
+function openFullScreen(cardId){
+  const card = document.getElementById(cardId);
+  card.classList.add('fullscreen');
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent='X'; closeBtn.className='close-full';
+  closeBtn.onclick=()=>{ card.classList.remove('fullscreen'); closeBtn.remove(); };
+  card.appendChild(closeBtn);
+  window.dispatchEvent(new Event('resize')); // force canvas redraw
+}
 
 /* ----------  FILTER LOGIC  ---------- */
 const fromPicker = document.getElementById('fromPicker');
@@ -279,7 +307,6 @@ function fetchLines(){
       document.getElementById('updated').textContent = 'Updated: ' + new Date().toLocaleString();
       document.getElementById('sampleCount').textContent = lines.length;
       applyFilter();
-      // show PID of monitor.ps1
       showMonitorPID();
     })
     .catch(err=>{ document.getElementById('status').textContent = 'Error loading data'; });
@@ -289,7 +316,6 @@ document.getElementById('autoRefresh').onchange = e => autoRefresh = e.target.ch
 
 /* ----------  KILL MONITOR  ---------- */
 function showMonitorPID(){
-  // ask the server for the PID that serve.ps1 exposes via /pid endpoint
   fetch('./pid?_='+Date.now())
     .then(r=>r.text())
     .then(txt=>{ document.getElementById('monPID').textContent = txt.trim(); })
@@ -298,9 +324,7 @@ function showMonitorPID(){
 function killMonitor(){
   const pid = document.getElementById('monPID').textContent;
   if(!pid || pid==='--' || pid==='??') return;
-  // call the kill endpoint (serve.ps1 will return 200 with empty body)
   fetch('./kill?pid='+pid,{method:'POST'}).then(()=>{
-    // mark killed
     document.getElementById('monPID').textContent = 'killed';
   });
 }
@@ -327,11 +351,19 @@ function renderChart(canvasId, data, metric, label, color){
   if(!vals.length){ ctx.fillStyle = '#999'; ctx.font = `${12*dpr}px sans-serif`; ctx.fillText('No data',10*dpr,20*dpr); return;}
 
   const min = Math.min(...vals), max = Math.max(...vals);
-  const pad = 12*dpr, plotW = w - 2*pad, plotH = h - 2*pad;
+  const pad = 40*dpr, plotW = w - 2*pad, plotH = h - 2*pad;
 
-  // grid
-  ctx.strokeStyle = 'rgba(0,0,0,.06)';
-  for(let i=0;i<=4;i++){ const y = pad + (plotH/4)*i; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+plotW,y); ctx.stroke(); }
+  // grid + axes
+  ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.lineWidth = 1;
+  for(let i=0;i<=4;i++){
+    const y = pad + (plotH/4)*i;
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(pad+plotW,y); ctx.stroke();
+    ctx.fillStyle = '#666'; ctx.font = `${10*dpr}px sans-serif`;
+    ctx.fillText(round(max - (max-min)/4*i), 5*dpr, y+3*dpr);
+  }
+  // axis bottom
+  ctx.beginPath(); ctx.moveTo(pad, pad+plotH); ctx.lineTo(pad+plotW, pad+plotH); ctx.stroke();
+
   // area
   ctx.beginPath();
   vals.forEach((v,i)=>{
@@ -341,7 +373,7 @@ function renderChart(canvasId, data, metric, label, color){
   });
   ctx.lineTo(pad+plotW, pad+plotH); ctx.lineTo(pad, pad+plotH); ctx.closePath();
   const grad = ctx.createLinearGradient(0,pad,0,pad+plotH);
-  grad.addColorStop(0, hexToRgba(color,0.25));
+  grad.addColorStop(0, hexToRgba(color,0.28));
   grad.addColorStop(1, hexToRgba(color,0.02));
   ctx.fillStyle = grad; ctx.fill();
   // line
@@ -351,11 +383,12 @@ function renderChart(canvasId, data, metric, label, color){
     const y = pad + (1 - (v-min)/Math.max(0.0001,max-min))*plotH;
     if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
   });
-  ctx.strokeStyle = color; ctx.lineWidth = 2*dpr; ctx.stroke();
-  // label
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5*dpr; ctx.stroke();
+
+  // legend
   ctx.fillStyle = '#555';
   ctx.font = `${12*dpr}px sans-serif`;
-  ctx.fillText(`${label}  (min:${round(min)} max:${round(max)})`, pad, 12*dpr);
+  ctx.fillText(`${label}  (min:${round(min)}  max:${round(max)})`, pad, 14*dpr);
 }
 
 /* ----------  UTILS  ---------- */
