@@ -403,30 +403,34 @@ function renderChart(canvasId, data, metric, label, color){
 let tip = null;
 function createTip(){
   if(tip) return;
-  tip = document.createElement('div'); tip.className='tooltip'; document.body.appendChild(tip);
+  tip = document.createElement('div');
+  tip.className='tooltip';
+  document.body.appendChild(tip);
 }
 function removeTip(){ if(tip) { tip.remove(); tip=null; } }
 
+// create tooltip once
+createTip();
+
 document.querySelectorAll('canvas').forEach(canvas=>{
-  createTip();
   canvas.addEventListener('mousemove', e=>{
     if(!canvas.chartData) return;
-    const {vals, times, min, max, pad, plotW, plotH, label, color} = canvas.chartData;
+    const {vals, times, min, max, pad, plotW, plotH, label} = canvas.chartData;
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (canvas.width/rect.width);
     const idx = Math.round((x - pad) / plotW * (vals.length-1));
-    if(idx<0||idx>=vals.length) { removeTip(); return; }
+    if(idx<0||idx>=vals.length) { tip.style.display='none'; return; }
     const v = vals[idx]; const t = times[idx];
-    if(t==null||v==null) { removeTip(); return; }
+    if(t==null||v==null) { tip.style.display='none'; return; }
     tip.textContent = `${t}   ${label}: ${round(v)}`;
+    tip.style.display='block';
     tip.style.left = e.clientX + 'px';
     tip.style.top  = e.clientY + 'px';
     tip.style.transform = 'translate(-50%,-100%)';
     tip.style.marginTop = '-8px';
   });
-  canvas.addEventListener('mouseleave', ()=> removeTip());
+  canvas.addEventListener('mouseleave', ()=> tip && (tip.style.display='none') );
 });
-
 /* ----------  UTILS  ---------- */
 function round(v){ return Math.round(v*100)/100; }
 function hexToRgba(hex,a){
