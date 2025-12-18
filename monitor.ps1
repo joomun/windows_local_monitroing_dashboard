@@ -55,6 +55,7 @@ while ($true) {
     $updated      = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
 
     # single-quoted here-string → JS ${…} left untouched by PowerShell
+    # ---------  NEW DASHBOARD TEMPLATE  ---------
     $html = @'
 <!doctype html>
 <html>
@@ -66,7 +67,7 @@ while ($true) {
 /*  CSS VARIABLES  */
 :root{
   --bg:#f6f8fa; --card:#fff; --text:#111; --muted:#6b7280; --accent:#0a84ff;
-  --cpu:#ff6b6b; --ram:#6bc1ff; --disk:#8ce99a; --net:#ffd43b;
+  --cpu:#ff6b6b; --ram:#6bc1ff; --disk:#8ce99a; --net:#ffd43b; --kill:#ff4d4d;
   --shadow:0 6px 18px rgba(15,23,42,.08);
   --radius:10px; --font:"Segoe UI",Roboto,Arial,sans-serif;
   --resize-h:10px; --resize-w:10px;
@@ -114,6 +115,11 @@ th{position:sticky;top:0;background:var(--bg);}
 .filter-bar label{font-size:13px;color:var(--muted);}
 .quick-btns{display:flex;gap:6px;}
 .quick-btns button{font-size:12px;padding:4px 8px;}
+
+/*  KILL CARD  */
+.kill-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.kill-row button{background:var(--kill);color:#fff;border:none;}
+.kill-row button:hover{background:#ff1a1a;}
 
 /*  FOOTER  */
 footer{margin-top:14px;text-align:right;color:var(--muted);font-size:12px;}
@@ -169,6 +175,16 @@ footer{margin-top:14px;text-align:right;color:var(--muted);font-size:12px;}
     <div class="card" id="netCard">
       <h3>Network bytes</h3>
       <div class="canvasWrap"><canvas id="netCanvas"></canvas></div>
+      <div class="resize"></div>
+    </div>
+
+    <!--  NEW: KILL CARD  -->
+    <div class="card" id="killCard">
+      <h3>Monitor process</h3>
+      <div class="kill-row">
+        <span>PID: <strong id="monPID">--</strong></span>
+        <button onclick="killMonitor()">Kill monitor</button>
+      </div>
       <div class="resize"></div>
     </div>
   </div>
@@ -263,11 +279,31 @@ function fetchLines(){
       document.getElementById('updated').textContent = 'Updated: ' + new Date().toLocaleString();
       document.getElementById('sampleCount').textContent = lines.length;
       applyFilter();
+      // show PID of monitor.ps1
+      showMonitorPID();
     })
     .catch(err=>{ document.getElementById('status').textContent = 'Error loading data'; });
 }
 document.getElementById('refresh').onclick = fetchLines;
 document.getElementById('autoRefresh').onchange = e => autoRefresh = e.target.checked;
+
+/* ----------  KILL MONITOR  ---------- */
+function showMonitorPID(){
+  // ask the server for the PID that serve.ps1 exposes via /pid endpoint
+  fetch('./pid?_='+Date.now())
+    .then(r=>r.text())
+    .then(txt=>{ document.getElementById('monPID').textContent = txt.trim(); })
+    .catch(()=>{ document.getElementById('monPID').textContent = '??'; });
+}
+function killMonitor(){
+  const pid = document.getElementById('monPID').textContent;
+  if(!pid || pid==='--' || pid==='??') return;
+  // call the kill endpoint (serve.ps1 will return 200 with empty body)
+  fetch('./kill?pid='+pid,{method:'POST'}).then(()=>{
+    // mark killed
+    document.getElementById('monPID').textContent = 'killed';
+  });
+}
 
 /* ----------  RENDER  ---------- */
 function renderAll(){
@@ -338,7 +374,7 @@ fetchLines();
 </html>
 '@
 
-    # inject dynamic values
+    # inject dynamic tokens
     $html = $html.Replace('{{DATAFILE}}', $dataFileName)
     $html = $html.Replace('{{UPDATED}}', $updated)
 
